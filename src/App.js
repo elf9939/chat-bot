@@ -55,8 +55,10 @@ function getRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// ── Shared AudioContext (required for iOS audio unlock) ───────────────────────
+// ── Audio unlock (iOS Safari requires this on first user tap) ────────────────
 let sharedAudioCtx = null;
+let persistentAudio = null; // reused Audio element — iOS trusts it after first play
+
 function getAudioCtx() {
   if (!sharedAudioCtx) {
     sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -64,8 +66,9 @@ function getAudioCtx() {
   return sharedAudioCtx;
 }
 
-// Must be called synchronously inside a user gesture (button tap) to unlock iOS audio
+// Call synchronously inside a tap handler to unlock both audio systems on iOS
 function unlockAudio() {
+  // Unlock Web Audio API (for ring tone)
   const ctx = getAudioCtx();
   ctx.resume();
   const buf = ctx.createBuffer(1, 1, 22050);
@@ -73,6 +76,15 @@ function unlockAudio() {
   src.buffer = buf;
   src.connect(ctx.destination);
   src.start(0);
+
+  // Unlock HTML Audio element (for ElevenLabs speech)
+  // A silent WAV played in the gesture "trusts" the element for future async plays
+  if (!persistentAudio) {
+    persistentAudio = new Audio();
+    persistentAudio.src =
+      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+    persistentAudio.play().catch(() => {});
+  }
 }
 
 // US-style phone ring using Web Audio oscillators
@@ -109,7 +121,7 @@ function playRingTone() {
   });
 }
 
-// ElevenLabs TTS using AudioContext (works on iOS)
+// ElevenLabs TTS — uses the persistent Audio element so iOS allows async playback
 async function speakWithElevenLabs(text, voiceId) {
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
@@ -128,18 +140,16 @@ async function speakWithElevenLabs(text, voiceId) {
   );
   if (!res.ok) throw new Error(`ElevenLabs error: ${res.status}`);
 
-  const arrayBuffer = await res.arrayBuffer();
-  const ctx = getAudioCtx();
-  await ctx.resume();
-  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const audio = persistentAudio || new Audio();
 
   return new Promise((resolve, reject) => {
-    const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(ctx.destination);
-    source.onended = resolve;
-    source.onerror = reject;
-    source.start(0);
+    audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+    audio.onerror = () => { URL.revokeObjectURL(url); reject(); };
+    audio.src = url;
+    audio.load();
+    audio.play().catch(reject);
   });
 }
 
@@ -366,7 +376,7 @@ export default function App() {
           <p style={{ color: "#4b5563", maxWidth: 290, lineHeight: 1.8, fontSize: 14, marginBottom: 36 }}>
             A random local business owner will answer. Hold the mic to speak, release to send. They'll respond in a real human voice.
           </p>
-          <button onClick={startCall} style={{
+          <button onPointerDown={unlockAudio} onClick={startCall} style={{
             background: "#16a34a", color: "#fff", border: "none",
             borderRadius: 50, padding: "18px 54px", fontSize: 18,
             cursor: "pointer", boxShadow: "0 0 30px #16a34a66",
