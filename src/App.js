@@ -48,12 +48,68 @@ RULES:
 - Sound like a real person on the phone. Casual, natural speech. No lists or formal language.
 - Raise realistic objections: price, timing, already have a website, too busy, skeptical of ROI.
 - Never offer to buy unprompted. Make the salesperson earn it.
-- Never say you are an AI or that this is a simulation.`;
+- Never say you are an AI or that this is a simulation.
+- When answering the phone for the first time, just say your name and business name naturally, like a real person answering a business call.`;
 
 function getRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// ── Shared AudioContext (required for iOS audio unlock) ───────────────────────
+let sharedAudioCtx = null;
+function getAudioCtx() {
+  if (!sharedAudioCtx) {
+    sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return sharedAudioCtx;
+}
+
+// Must be called synchronously inside a user gesture (button tap) to unlock iOS audio
+function unlockAudio() {
+  const ctx = getAudioCtx();
+  ctx.resume();
+  const buf = ctx.createBuffer(1, 1, 22050);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+}
+
+// US-style phone ring using Web Audio oscillators
+function playRingTone() {
+  return new Promise((resolve) => {
+    try {
+      const ctx = getAudioCtx();
+      const ringDuration = 1.5;
+      const silence = 1.0;
+      const numRings = 2;
+
+      for (let i = 0; i < numRings; i++) {
+        const t = ctx.currentTime + i * (ringDuration + silence);
+        [440, 480].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.25, t + 0.05);
+          gain.gain.setValueAtTime(0.25, t + ringDuration - 0.05);
+          gain.gain.linearRampToValueAtTime(0, t + ringDuration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + ringDuration);
+        });
+      }
+      setTimeout(resolve, numRings * (ringDuration + silence) * 1000);
+    } catch (e) {
+      console.error("Ring tone failed:", e);
+      setTimeout(resolve, 3000);
+    }
+  });
+}
+
+// ElevenLabs TTS using AudioContext (works on iOS)
 async function speakWithElevenLabs(text, voiceId) {
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
@@ -71,13 +127,19 @@ async function speakWithElevenLabs(text, voiceId) {
     }
   );
   if (!res.ok) throw new Error(`ElevenLabs error: ${res.status}`);
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
+
+  const arrayBuffer = await res.arrayBuffer();
+  const ctx = getAudioCtx();
+  await ctx.resume();
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
   return new Promise((resolve, reject) => {
-    const audio = new Audio(url);
-    audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-    audio.onerror = reject;
-    audio.play().catch(reject);
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    source.onended = resolve;
+    source.onerror = reject;
+    source.start(0);
   });
 }
 
@@ -105,11 +167,12 @@ async function askClaude(messages, persona) {
     }),
   });
   const data = await res.json();
-  return data.content?.[0]?.text || "Sorry, can you say that again?";
+  return data.content?.[0]?.text || "Yeah, hello?";
 }
 
 async function getFeedback(messages, persona) {
   const transcript = messages
+    .filter((m) => !m.content.startsWith("("))
     .map((m) => `${m.role === "user" ? "Salesperson" : persona.name}: ${m.content}`)
     .join("\n");
 
@@ -183,12 +246,13 @@ export default function App() {
 
   // Start the call
   const startCall = async () => {
+    unlockAudio(); // Must be synchronous — unlocks iOS audio before any awaits
     setPhase("calling");
-    setStatusText("Dialing...");
-    await new Promise((r) => setTimeout(r, 800));
-    const opening = [{ role: "user", content: `Hello, is this ${persona.name}?` }];
+    setStatusText("Calling...");
+    await playRingTone();
+    setStatusText("Connected — waiting for answer...");
+    const opening = [{ role: "user", content: "(Your phone rings. You answer it.)" }];
     messagesRef.current = opening;
-    setStatusText("Connected — waiting for response...");
     const reply = await askClaude(opening, persona);
     messagesRef.current = [...opening, { role: "assistant", content: reply }];
     await prospectSpeak(reply);
@@ -197,6 +261,7 @@ export default function App() {
   // Push-to-talk
   const startListening = () => {
     if (phase !== "active") return;
+    unlockAudio(); // Re-unlock in case iOS needs it again
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       alert("Speech recognition not supported. Please use Safari on iPhone or Chrome on Android.");
