@@ -94,9 +94,10 @@ function unlockAudio() {
 
 // US-style phone ring using Web Audio oscillators
 function playRingTone() {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     try {
       const ctx = getAudioCtx();
+      await ctx.resume();
       const ringDuration = 1.5;
       const silence = 1.0;
       const numRings = 2;
@@ -182,7 +183,10 @@ async function askClaude(messages, persona) {
     }),
   });
   const data = await res.json();
-  return data.content?.[0]?.text || "Yeah, hello?";
+  if (!data.content?.[0]?.text) {
+    console.error("Claude API error:", JSON.stringify(data));
+  }
+  return data.content?.[0]?.text || `[API ERROR: ${data.error?.message || data.type || "unknown"}]`;
 }
 
 async function getFeedback(messages, persona) {
