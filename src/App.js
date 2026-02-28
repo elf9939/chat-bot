@@ -272,7 +272,6 @@ export default function App() {
   const startListening = (e) => {
     if (e) e.preventDefault();
     if (phase !== "active") return;
-    unlockAudio();
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       alert("Speech recognition not supported. Please use Safari on iPhone or Chrome on Android.");
@@ -280,7 +279,7 @@ export default function App() {
     }
     const rec = new SR();
     rec.lang = "en-US";
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = false;
     recognitionRef.current = rec;
     setPhase("listening");
