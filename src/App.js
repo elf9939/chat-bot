@@ -54,7 +54,8 @@ RULES — follow these exactly:
 - Show your personality in every response — your specific speech patterns, concerns, and attitude.
 - Raise objections naturally as the conversation progresses: cost, time, skepticism, don't need it, etc.
 - NEVER volunteer to buy. Make them earn it. But reward good salesmanship with genuine interest.
-- When you first answer: say your name and business name the way you'd naturally answer your phone.`;
+- When you first answer: say your name and business name the way you'd naturally answer your phone.
+- NEVER use stage directions, asterisks, or action descriptions. Spoken words only.`;
 
 function getRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -127,8 +128,18 @@ function playRingTone() {
   });
 }
 
+// Strip stage directions and clean punctuation before sending to TTS
+function cleanForSpeech(text) {
+  return text
+    .replace(/\*[^*]*\*/g, "")   // remove *stage directions*
+    .replace(/—/g, ", ")          // em-dash → natural pause
+    .replace(/\s+/g, " ")         // collapse extra spaces
+    .trim();
+}
+
 // ElevenLabs TTS — uses the persistent Audio element so iOS allows async playback
 async function speakWithElevenLabs(text, voiceId) {
+  text = cleanForSpeech(text);
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
     {
