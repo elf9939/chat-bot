@@ -269,9 +269,10 @@ export default function App() {
   };
 
   // Push-to-talk
-  const startListening = () => {
+  const startListening = (e) => {
+    if (e) e.preventDefault();
     if (phase !== "active") return;
-    unlockAudio(); // Re-unlock in case iOS needs it again
+    unlockAudio();
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       alert("Speech recognition not supported. Please use Safari on iPhone or Chrome on Android.");
@@ -297,6 +298,16 @@ export default function App() {
       await prospectSpeak(reply);
     };
 
+    // Fires when recognition ends — reset if nothing was captured
+    rec.onend = () => {
+      setPhase((cur) => (cur === "listening" ? "active" : cur));
+      setStatusText((cur) =>
+        cur === "Listening..." || cur === "Processing..."
+          ? "Hold mic button to speak"
+          : cur
+      );
+    };
+
     rec.onerror = (e) => {
       console.error("STT error:", e.error);
       setPhase("active");
@@ -306,8 +317,11 @@ export default function App() {
     rec.start();
   };
 
-  const stopListening = () => {
-    recognitionRef.current?.stop();
+  const stopListening = (e) => {
+    if (e) e.preventDefault();
+    if (!recognitionRef.current) return;
+    setStatusText("Processing...");
+    recognitionRef.current.stop();
   };
 
   // End call and get feedback
@@ -392,9 +406,11 @@ export default function App() {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, marginTop: 28 }}>
           {/* Mic button */}
           <button
-            onPointerDown={startListening}
-            onPointerUp={stopListening}
-            onPointerLeave={stopListening}
+            onTouchStart={startListening}
+            onTouchEnd={stopListening}
+            onMouseDown={startListening}
+            onMouseUp={stopListening}
+            onMouseLeave={stopListening}
             disabled={!isActive}
             style={{
               width: 100, height: 100, borderRadius: "50%",
