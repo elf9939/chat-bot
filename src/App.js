@@ -6,43 +6,43 @@ const ANTHROPIC_KEY = process.env.REACT_APP_ANTHROPIC_KEY;
 
 // ── ElevenLabs voice IDs ─────────────────────────────────────────────────────
 const VOICE_IDS = {
-  tony:   "TxGEqnHWrfWFTfGW9XjX", // Josh
-  karen:  "EXAVITQu4vr4xnSDxMaL", // Bella
-  derek:  "VR6AewLTigWG4xSOukaG", // Arnold
-  maria:  "pFZP5JQG7iQjIQuC4Bku", // Lily
-  james:  "onwK4e9ZLuTAKqWW03F9", // Daniel
-  linda:  "XB0fDUnXU5powFXDhCwa", // Charlotte
-  carlos: "N2lVS1w4EtoT3dr4eOWO", // Callum
-  sandra: "jsCqWAovK2LkecY7zXl4", // Gigi
+  mike:  "TxGEqnHWrfWFTfGW9XjX", // Josh  — warm
+  dave:  "N2lVS1w4EtoT3dr4eOWO", // Callum — casual
+  rick:  "VR6AewLTigWG4xSOukaG", // Arnold — gruff
+  bill:  "onwK4e9ZLuTAKqWW03F9", // Daniel — flat/dismissive
+  jeff:  "TxGEqnHWrfWFTfGW9XjX", // Josh  — analytical
+  tom:   "N2lVS1w4EtoT3dr4eOWO", // Callum — friendly
+  steve: "VR6AewLTigWG4xSOukaG", // Arnold — hostile
+  ray:   "onwK4e9ZLuTAKqWW03F9", // Daniel — cautious
 };
 
 // ── Personas ─────────────────────────────────────────────────────────────────
 const PERSONAS = [
-  { id: "tony", name: "Tony Rizzo", business: "Tony's Pizza", type: "Restaurant owner", difficulty: "Medium", mood: "rushed", emoji: "🍕",
-    personality: `Talks fast and cuts people off. Always in the middle of something — 'I got pies in the oven', 'it's almost lunch rush'. Says 'yeah yeah' and 'look' a lot. Has a Facebook page his nephew made. Thinks a website costs $10,000. Softens up if you mention online ordering or Google Maps. Catchphrase: 'I dunno, I been doin fine without one.'` },
-  { id: "karen", name: "Karen Bloom", business: "Bloom Hair Studio", type: "Salon owner", difficulty: "Easy", mood: "warm", emoji: "💇",
-    personality: `Super chatty and warm. Calls everyone 'hon'. Goes off on tangents about her clients or the salon décor. Already knows she wants a website, just hasn't pulled the trigger. Lights up at the mention of online booking or showing off her color work. Will ask 'Can I put my Instagram photos on it?' Easily excited but needs a gentle push to commit.` },
-  { id: "derek", name: "Derek Stone", business: "Stone's Auto Repair", type: "Auto shop owner", difficulty: "Hard", mood: "suspicious", emoji: "🔧",
-    personality: `Short, blunt, suspicious. Got ripped off by a web designer — 'paid some guy two grand, never heard from him again.' Responds with 'uh-huh' and 'so?' a lot. Won't engage unless you acknowledge his bad experience and show proof. Respects straight talk. If you're too salesy he'll say 'sounds like a pitch' and go quiet. Hard to crack but fair if you earn it.` },
-  { id: "maria", name: "Maria Gonzalez", business: "Maria's Cleaning", type: "Cleaning business", difficulty: "Medium", mood: "neutral", emoji: "🧹",
-    personality: `Polite but no-nonsense. Built her business entirely on referrals — 'my clients find me through friends, always has been that way.' Worried about looking unprofessional online. Very cost-conscious. Will ask 'how much is this going to cost me every month?' Warms up if you talk about getting more residential clients in new neighborhoods.` },
-  { id: "james", name: "James Okafor", business: "Okafor's Barbershop", type: "Barbershop owner", difficulty: "Medium", mood: "curious", emoji: "✂️",
-    personality: `Young, smart, asks real questions. Has Instagram with 2k followers but losing walk-ins to a competitor who has online booking. Knows he needs a site but wants to understand exactly what he's paying for. Will ask about SEO, how long it takes to rank, and whether he can update it himself. Responds well to specifics and honesty.` },
-  { id: "linda", name: "Linda Park", business: "Park's Dry Cleaning", type: "Dry cleaner", difficulty: "Hard", mood: "dismissive", emoji: "👔",
-    personality: `Been in business 28 years without a website. Very set in her ways. 'My customers know where I am.' Doesn't trust the internet. Interrupts with 'I really don't have time for this.' Will give you one shot — if you can't connect it to something she actually cares about (loyal customers, retirement, her daughter taking over the shop), she hangs up.` },
-  { id: "carlos", name: "Carlos Mendez", business: "Mendez Landscaping", type: "Landscaping", difficulty: "Medium", mood: "friendly", emoji: "🌿",
-    personality: `Super relaxed and friendly. Laughs easily. Gets a ton of work in spring but slow in winter. Interested but worried about who updates the site — 'I'm out in the field all day, I'm not gonna be posting stuff.' If you solve the maintenance question he's basically sold. Very budget conscious — needs to hear a real number before he'll get excited.` },
-  { id: "sandra", name: "Sandra Holt", business: "Holt's Bakery", type: "Bakery owner", difficulty: "Easy", mood: "excited", emoji: "🍰",
-    personality: `Warm, enthusiastic, nearly sold before you even start. Has been wanting a website 'forever'. Wants to show off her custom cakes and eventually take orders online. Will ask if she can do that. Only hesitation is she's not tech-savvy — 'I can barely work my phone.' Reassure her it'll be simple to manage and she's basically ready to go.` },
+  { id: "mike", name: "Mike Harmon", business: "Harmon Roofing", type: "Roofing contractor", difficulty: "Easy", mood: "warm", emoji: "🏠",
+    personality: `Friendly, straightforward guy. Hates the Angi/HomeAdvisor lead game — 'I pay forty bucks a lead and half of 'em are tire kickers.' Open to better options but mildly skeptical. Warms up fast if you mention exclusive leads or showing up on Google when someone searches for a roofer nearby. Asks 'so how's this different from the lead sites?' early on.` },
+  { id: "dave", name: "Dave Kowalski", business: "Kowalski Roofing", type: "Roofing contractor", difficulty: "Medium", mood: "rushed", emoji: "🔨",
+    personality: `Always in the middle of something — on a roof, in the truck, measuring a job. Talks fast, cuts people off. Says 'yep', 'got it', 'okay' a lot but isn't really listening until you say something that stops him. Gives you about 60 seconds before he says he has to go. Hook him fast with a specific dollar amount or a local competitor example. Says 'I dunno man, I stay pretty busy' when skeptical.` },
+  { id: "rick", name: "Rick Tanner", business: "Tanner Roofing & Gutters", type: "Roofing contractor", difficulty: "Hard", mood: "suspicious", emoji: "🛠️",
+    personality: `Got burned twice — paid a web company $1,500, they disappeared. Paid another $800 for 'SEO', nothing happened. Deeply distrustful of anyone selling web stuff. Short answers, long silences. Says 'yeah I've heard that before' and 'prove it' a lot. Will NOT engage unless you acknowledge his past experiences without getting defensive. Respects brutal honesty — if you're too smooth he'll say 'you sound like the last two guys' and shut down. Hang up threshold: medium — will bail if you don't acknowledge his skepticism within the first couple exchanges.` },
+  { id: "bill", name: "Bill Santos", business: "Santos Roofing Inc", type: "Roofing contractor", difficulty: "Hard", mood: "dismissive", emoji: "📵",
+    personality: `22 years in business, fully booked on referrals. 'I don't need more work, I need less.' Extremely terse — one or two sentence answers. Does not believe websites do anything for roofers. Has heard every pitch. Gets annoyed fast. His one soft spot: his son Danny just joined the business and Bill worries about what happens when he's not around to hand off clients. If you find that nerve, he'll pause. Otherwise he WILL hang up — his hang up threshold is very low, he'll bail after 2 pushes if you haven't connected. Very likely to hang up.` },
+  { id: "jeff", name: "Jeff Greer", business: "Greer Roofing Solutions", type: "Roofing contractor", difficulty: "Medium", mood: "curious", emoji: "🔍",
+    personality: `Smart, runs a tight operation. Has a basic website but it hasn't generated a single call in two years. Skeptical but genuinely curious about why it's not working. Asks specific questions: 'what's a realistic timeline to rank?', 'what's my cost per lead?', 'do I own the site or are you renting it to me?' Responds well to honesty and specifics. Will catch you if you're vague or use buzzwords. Wants to understand before he commits.` },
+  { id: "tom", name: "Tom Walsh", business: "Walsh & Sons Roofing", type: "Roofing contractor", difficulty: "Easy", mood: "friendly", emoji: "👷",
+    personality: `Easy-going, family operation with his two sons. His youngest 'handles the Facebook' but Tom knows they're leaving money on the table. Jokes around, easy to keep talking, loves to go off on tangents about jobs they've done. Gets genuinely interested but is easily distracted and forgets to make decisions. Needs a direct close — if you let the conversation drift he'll wrap up with 'sounds good, I'll think about it' and hang up.` },
+  { id: "steve", name: "Steve Drummond", business: "Drummond Roofing", type: "Roofing contractor", difficulty: "Hard", mood: "hostile", emoji: "🚫",
+    personality: `Hates cold calls with a passion. Gets five of these a day. Answers with barely concealed irritation — 'let me guess, website?' Extremely low patience. Will hang up fast unless something genuinely surprises him. The ONLY things that work: brutal directness ('I'll be straight with you, most of these calls are garbage, this one might be different'), calling out his frustration head-on, or saying something hyper-specific about his market. If you sound scripted AT ALL, he's gone. Very likely to hang up within 1-2 exchanges.` },
+  { id: "ray", name: "Ray Munoz", business: "Munoz Roofing Co", type: "Roofing contractor", difficulty: "Medium", mood: "cautious", emoji: "🤔",
+    personality: `Thoughtful, cautious with money. Just came off a slow season and is watching every dollar. Asks 'what's this gonna run me?' in the first minute. Not opposed to a website but needs to see clear ROI before he'll spend anything. Will bring cost back up every few exchanges even when interested. Warms up noticeably if you give him a real number and explain what he gets — he hates vague pricing more than anything.` },
 ];
 
 const MOOD_COLORS = {
   rushed: "#f59e0b", warm: "#10b981", suspicious: "#ef4444",
   neutral: "#94a3b8", friendly: "#3b82f6", dismissive: "#a855f7",
-  curious: "#06b6d4", excited: "#ec4899",
+  curious: "#06b6d4", excited: "#ec4899", hostile: "#dc2626", cautious: "#d97706",
 };
 
-const SYSTEM_PROMPT = `You are roleplaying as {NAME}, owner of {BUSINESS}. A salesperson just cold-called you trying to sell a website or web design services.
+const SYSTEM_PROMPT = `You are roleplaying as {NAME}, owner of {BUSINESS}, a roofing contractor. A salesperson just cold-called you trying to sell a website or web design services.
 
 Your personality: {PERSONALITY}
 
@@ -55,7 +55,8 @@ RULES — follow these exactly:
 - Raise objections naturally as the conversation progresses: cost, time, skepticism, don't need it, etc.
 - NEVER volunteer to buy. Make them earn it. But reward good salesmanship with genuine interest.
 - When you first answer: say your name and business name the way you'd naturally answer your phone.
-- NEVER use stage directions, asterisks, or action descriptions. Spoken words only.`;
+- NEVER use stage directions, asterisks, or action descriptions. Spoken words only.
+- HANGING UP: If the salesperson is repetitive, too pushy, won't take a hint, uses buzzwords without substance, or you've run out of patience per your personality, end the call with a short dismissal AND append [HANGUP] on its own at the very end (e.g. "Look, I gotta go, not interested." followed by [HANGUP]). Easy personalities almost never hang up. Medium hang up only after being pushed hard 2+ times with no value. Hard personalities may hang up within 1-2 exchanges if the opener is weak or generic.`;
 
 function getRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -269,7 +270,7 @@ async function getFeedback(messages, persona) {
       messages: [
         {
           role: "user",
-          content: `You are an expert sales coach for web design sales to small businesses.
+          content: `You are an expert sales coach specializing in web design sales to local roofing contractors.
 
 Transcript of a practice call with ${persona.name}, owner of ${persona.business} (Difficulty: ${persona.difficulty}):
 
@@ -279,10 +280,10 @@ Give structured coaching feedback:
 1. **Score** (1–10) + one-line verdict
 2. **What They Did Well** (2–3 specific things from the call)
 3. **What Needs Work** (2–3 specific things with examples)
-4. **Missed Opportunities**
-5. **One Power Tip** for next time
+4. **Missed Opportunities** (objections not addressed, hooks not used)
+5. **One Power Tip** — the single most important thing to fix for the next call with a roofer
 
-Be honest, specific, and encouraging. Reference actual lines from the call.`,
+Be honest, direct, and specific to roofing sales. Reference actual lines from the call.`,
         },
       ],
     }),
@@ -300,25 +301,37 @@ export default function App() {
   const [callLog, setCallLog] = useState([]);
   const [feedback, setFeedback] = useState("");
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [wasHungUp, setWasHungUp] = useState(false);
   const messagesRef = useRef([]);
   const recognitionRef = useRef(null);
 
   const moodColor = MOOD_COLORS[persona.mood] || "#6b7280";
   const voiceId = VOICE_IDS[persona.id];
 
-  // Speak with ElevenLabs then move to active
+  // Speak with ElevenLabs then move to active (or hang-up state)
   const prospectSpeak = useCallback(
     async (text) => {
+      const isHangup = text.includes("[HANGUP]");
+      const cleanText = text.replace("[HANGUP]", "").trim();
       setPhase("prospectTalking");
       setStatusText(`${persona.name} is talking...`);
-      setCallLog((l) => [...l, { who: "them", text }]);
+      setCallLog((l) => [...l, { who: "them", text: cleanText }]);
       try {
-        await speakWithElevenLabs(text, voiceId);
+        await speakWithElevenLabs(cleanText, voiceId);
       } catch (e) {
         console.error("TTS failed:", e);
       }
-      setPhase("active");
-      setStatusText("Hold mic button to speak");
+      if (isHangup) {
+        setWasHungUp(true);
+        setPhase("ended");
+        setFeedbackLoading(true);
+        const fb = await getFeedback(messagesRef.current, persona);
+        setFeedback(fb);
+        setFeedbackLoading(false);
+      } else {
+        setPhase("active");
+        setStatusText("Hold mic button to speak");
+      }
     },
     [persona, voiceId]
   );
@@ -365,7 +378,9 @@ export default function App() {
       setPhase("prospectTalking");
       setStatusText(`${persona.name} is thinking...`);
       const reply = await askClaude(newMsgs, persona);
-      messagesRef.current = [...newMsgs, { role: "assistant", content: reply }];
+      // Store clean reply (strip hang-up signal) in message history
+      const cleanReply = reply.replace("[HANGUP]", "").trim();
+      messagesRef.current = [...newMsgs, { role: "assistant", content: cleanReply }];
       await prospectSpeak(reply);
     };
 
@@ -459,7 +474,7 @@ export default function App() {
       {phase === "intro" && (
         <div style={{ textAlign: "center", marginTop: 32 }}>
           <p style={{ color: "#4b5563", maxWidth: 290, lineHeight: 1.8, fontSize: 14, marginBottom: 36 }}>
-            A random local business owner will answer. Hold the mic to speak, release to send. They'll respond in a real human voice.
+            A random local roofer will answer. Hold the mic to speak, release to send. Some prospects hang up — earn their attention fast.
           </p>
           <button onPointerDown={unlockAudio} onClick={startCall} style={{
             background: "#16a34a", color: "#fff", border: "none",
@@ -539,6 +554,19 @@ export default function App() {
       {/* ── FEEDBACK ── */}
       {isEnded && (
         <div style={{ width: "100%", maxWidth: 580, marginTop: 28 }}>
+          {wasHungUp && (
+            <div style={{
+              background: "#1a0a0a", border: "1px solid #7f1d1d",
+              borderRadius: 8, padding: "12px 18px", marginBottom: 16,
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <span style={{ fontSize: 20 }}>📵</span>
+              <div>
+                <div style={{ color: "#f87171", fontWeight: 600, fontSize: 14 }}>They hung up</div>
+                <div style={{ color: "#6b7280", fontSize: 12, marginTop: 2 }}>{persona.name} ended the call — here's what happened</div>
+              </div>
+            </div>
+          )}
           <div style={{
             background: "#0a160a", border: "1px solid #14532d55",
             borderRadius: 12, padding: 22,
