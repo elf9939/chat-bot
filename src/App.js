@@ -157,16 +157,65 @@ async function speakWithElevenLabs(text, voiceId) {
   );
   if (!res.ok) throw new Error(`ElevenLabs error: ${res.status}`);
 
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
   const audio = persistentAudio || new Audio();
 
+  // iOS Safari doesn't support MediaSource for audio — fall back to full blob
+  const canStream =
+    typeof MediaSource !== "undefined" &&
+    MediaSource.isTypeSupported("audio/mpeg");
+
+  if (!canStream) {
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    return new Promise((resolve, reject) => {
+      audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); reject(); };
+      audio.src = url;
+      audio.load();
+      audio.play().catch(reject);
+    });
+  }
+
+  // MediaSource streaming — playback starts as first chunks arrive
   return new Promise((resolve, reject) => {
+    const mediaSource = new MediaSource();
+    const url = URL.createObjectURL(mediaSource);
+
     audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-    audio.onerror = () => { URL.revokeObjectURL(url); reject(); };
+    audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Audio error")); };
     audio.src = url;
+
+    mediaSource.addEventListener("sourceopen", async () => {
+      let sourceBuffer;
+      try {
+        sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
+      } catch (e) {
+        reject(e);
+        return;
+      }
+
+      const waitForUpdate = () =>
+        new Promise((r) => sourceBuffer.addEventListener("updateend", r, { once: true }));
+
+      const reader = res.body.getReader();
+      try {
+        audio.play().catch(() => {});
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            if (sourceBuffer.updating) await waitForUpdate();
+            mediaSource.endOfStream();
+            break;
+          }
+          if (sourceBuffer.updating) await waitForUpdate();
+          sourceBuffer.appendBuffer(value);
+        }
+      } catch (e) {
+        reject(e);
+      }
+    }, { once: true });
+
     audio.load();
-    audio.play().catch(reject);
   });
 }
 
