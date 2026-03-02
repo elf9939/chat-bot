@@ -151,7 +151,7 @@ async function speakWithElevenLabs(text, voiceId) {
       },
       body: JSON.stringify({
         text,
-        model_id: "eleven_v3",
+        model_id: "eleven_turbo_v2_5",
         voice_settings: { stability: 0.5, similarity_boost: 0.75 },
       }),
     }
@@ -220,7 +220,7 @@ async function speakWithElevenLabs(text, voiceId) {
   });
 }
 
-async function askClaude(messages, persona) {
+async function askClaude(messages, persona, attempt = 0) {
   const system = SYSTEM_PROMPT
     .replace("{NAME}", persona.name)
     .replace("{BUSINESS}", persona.business)
@@ -238,19 +238,44 @@ async function askClaude(messages, persona) {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 150,
+      max_tokens: 100,
+      stream: true,
       system,
       messages,
     }),
   });
-  const data = await res.json();
-  if (!data.content?.[0]?.text) {
-    console.error("Claude API error:", JSON.stringify(data));
+
+  // Retry on overloaded
+  if (res.status === 529 && attempt < 2) {
+    await new Promise((r) => setTimeout(r, 1500));
+    return askClaude(messages, persona, attempt + 1);
   }
-  return data.content?.[0]?.text || `[API ERROR: ${data.error?.message || data.type || "unknown"}]`;
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    return `[API ERROR: ${data.error?.message || res.status}]`;
+  }
+
+  // Stream response and accumulate text
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    for (const line of decoder.decode(value).split("\n")) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+          text += event.delta.text;
+        }
+      } catch {}
+    }
+  }
+  return text || "[No response]";
 }
 
-async function getFeedback(messages, persona) {
+async function getFeedback(messages, persona, attempt = 0) {
   const transcript = messages
     .filter((m) => !m.content.startsWith("("))
     .map((m) => `${m.role === "user" ? "Salesperson" : persona.name}: ${m.content}`)
@@ -266,7 +291,7 @@ async function getFeedback(messages, persona) {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1000,
+      max_tokens: 800,
       messages: [
         {
           role: "user",
@@ -288,6 +313,10 @@ Be honest, direct, and specific to roofing sales. Reference actual lines from th
       ],
     }),
   });
+  if (res.status === 529 && attempt < 2) {
+    await new Promise((r) => setTimeout(r, 1500));
+    return getFeedback(messages, persona, attempt + 1);
+  }
   const data = await res.json();
   return data.content?.[0]?.text || "Could not generate feedback.";
 }
